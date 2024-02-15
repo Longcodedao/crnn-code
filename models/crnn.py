@@ -1,15 +1,6 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
-
-
-# In[24]:
 
 
 class CRNN(nn.Module):
@@ -30,8 +21,8 @@ class CRNN(nn.Module):
         
     def _cnn_backbone(self, img_channel, img_width, img_height,
                       leaky_relu = True):
-        assert img_width & 4 == 0
-        assert img_height % 16 == 0
+        # assert img_width & 4 == 0
+        # assert img_height % 16 == 0
 
         # m means the mode: 0 is convolution, 1 is max pooling
         # k means kernel_size
@@ -49,7 +40,7 @@ class CRNN(nn.Module):
             [0,  (3, 3),  1,   1,    512,   True],
             [0,  (3, 3),  1,   1,    512,   True],
             [1,  (2, 1),  2,   None,  None, False],
-            [0,  (2, 2),  1,   1,    512,   True],
+            [0,  (2, 2),  1,   0,    512,   False],
        ]
 
         cnn = []
@@ -85,11 +76,15 @@ class CRNN(nn.Module):
     def forward(self, images):
 
         conv = self.cnn(images)
-        batch, channels, height, width = images.conv()
-
+        batch, channels, height, width = conv.size()
+        # print(f"Channels: {channels} Height: {height} Width: {width}")
         conv = conv.view(batch, channels * height, width)
+        
+        # (batch, width, lol)
         conv = conv.permute(0, 2, 1)
-        sequence = self.map_to_sequence(conv)
+        print(conv.shape)
+        
+        sequence = self.map_to_seq(conv)
 
         recurrent, _ = self.lstm1(sequence)
         recurrent, _ = self.lstm2(recurrent)
@@ -98,26 +93,10 @@ class CRNN(nn.Module):
 
         # Returning the dimension (batch_size, width, num_classes)
         return F.log_softmax(logits, dim = 2)
-        
 
 
-# In[25]:
-
-
-# conv = torch.randn(64, 256, 30)
-# conv = conv.permute(0, 2, 1)
-
-# conv.shape
-
-
-# In[26]:
-
-
-# crnn = CRNN(1, img_height = 32, img_width = 96, num_classes = 100)
-# crnn
-
-
-# In[ ]:
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 
