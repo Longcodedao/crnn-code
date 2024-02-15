@@ -15,7 +15,7 @@ class Synth90kDataset(Dataset):
     CHARS2LABELS = {char: label for label, char in enumerate(CHARS)}
     LABEL2CHAR = {label: char for char, label in CHARS2LABELS.items()}
 
-    def __init__(self, dataset_path, mode, img_height = 32, img_width = 100, device = "cpu"):
+    def __init__(self, dataset_path, mode, img_height = 32, img_width = 100):
         self.files, self.texts = self.load_data(dataset_path, mode)
         self.img_height = 32
         self.img_width = 100
@@ -26,8 +26,6 @@ class Synth90kDataset(Dataset):
             transforms.ToTensor(),
             transforms.Normalize(mean = [0.5], std = [0.5])
         ])
-
-        self.device = device
         
     def load_data(self, dataset_path, mode):
         print(f"Loading Dataset with mode: {mode}")
@@ -60,7 +58,7 @@ class Synth90kDataset(Dataset):
 
     def __getitem__(self, index):
         image_file = self.files[index]
-        print(image_file)
+        # print(image_file)
         try: 
             image = Image.open(image_file)
         except IOError:
@@ -73,7 +71,7 @@ class Synth90kDataset(Dataset):
         target = [self.CHARS2LABELS[c] for c in text]
         return {"image" : image, 
                 "target": torch.tensor(target, dtype = torch.int64),  
-                "target_length": torch.tensor(target, dtype = torch.int64)}
+                "target_length": torch.tensor([len(target)], dtype = torch.int64)}
 
 def synth90k_collate_fn(batch):
     images = [item["image"] for item in batch]
