@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
-
-
 from collections import defaultdict
 
 import numpy as np
@@ -11,8 +8,6 @@ import math
 import torch
 from scipy.special import logsumexp
 
-
-# In[5]:
 
 
 NINF = -1 * float('inf')
@@ -23,8 +18,6 @@ class Hypothesis:
         self.sequence = sequence
         self.log_prob = log_prob
 
-
-# In[6]:
 
 
 def reconstruct(labels, blank = 0):
@@ -63,23 +56,27 @@ def beam_search_decode(log_prob, blank = 0, beam_size = 10,
                 if log < threshold:
                     continue
                 extended_sequences = hypothesis.sequence + [c]
-                log_prob_extend = hypothesis.log_prob + np.log(log)
+                log_prob_extend = hypothesis.log_prob + log
 
                 new_hypothesis = Hypothesis(sequence = extended_sequences,
                                             log_prob = log_prob_extend)
                 new_beam.append(new_hypothesis)
-            beam = sorted(new_beam, lambda x: x.log_prob, reversed = True)[:beam_size]
+            # beam = sorted(new_beam, key = lambda x: x.log_prob, reverse = True)[:beam_width]
+            beam = sorted(new_beam, key=lambda x: x.log_prob, reverse=True)[:beam_size]
 
     total_accu_log_prob = {}
     # Sum up beams to produce labels
     for hypothesis in beam:
-        labels, log = hypothesis.sequence, hypothesis.log_prob
-        labels = _reconstruct(hypothesis.sequence, blank = blank)
-        total_accu_log_prob[labels] = np.log(log + total_accu_log_prob.get(labels, NINF))
+        labels, prob_log = hypothesis.sequence, hypothesis.log_prob
+        # print(prob_log)
+        labels = tuple(reconstruct(hypothesis.sequence, blank = blank))
+        # print(labels)
+        total_accu_log_prob[labels] = logsumexp([prob_log, total_accu_log_prob.get(labels, NINF)])
     
     label_beams = [(list(labels), accu_prob) for labels, accu_prob in total_accu_log_prob.items()] 
     label_beams.sort(key = lambda x: x[1], reverse = True)
 
+    # print(label_beams)
     return label_beams[0][0]
 
 
@@ -96,14 +93,12 @@ def ctc_decoder(log_probs, label2char = None, blank = 0, method = 'beam_search',
     decoded_list = []
     for log_prob in log_probs:
         labels = decoder(log_prob, blank = blank, beam_size = beam_size)
+        # print(labels)
         if label2char:
             labels = [label2char[l] for l in labels]
         decoded_list.append(labels)
         
     return decoded_list
-
-
-# In[ ]:
 
 
 

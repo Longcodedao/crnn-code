@@ -82,7 +82,7 @@ class CRNN(nn.Module):
         
         # (batch, width, lol)
         conv = conv.permute(0, 2, 1)
-        print(conv.shape)
+        # print(conv.shape)
         
         sequence = self.map_to_seq(conv)
 
